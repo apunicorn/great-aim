@@ -1,6 +1,6 @@
 import express from 'express';
 import cors from 'cors';
-import { WebSocketServer, WebSocket } from 'ws'; 
+import { WebSocketServer, WebSocket } from 'ws';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -16,19 +16,33 @@ const server = app.listen(PORT, () => {
   console.log(`Server listening on http://localhost:${PORT}`);
 });
 
-const wss = new WebSocketServer({server});
+const wss = new WebSocketServer({ server, maxPayload: 64 * 1024 });
 
 wss.on('connection', (socket) => {
-  socket.send('WEBSOCKET SERVER IS WOKRING OMG');
+  socket.send(JSON.stringify({ type: 'system', text: 'Connected' }));
 
-  socket.on('message', (message) => {
-    console.log('MESSAGE RECEIVED ', message.toString());
-  });
+  socket.on('message', (data, isBinary) => {
+    if (isBinary) return;
 
-  wss.clients.forEach((client) => {
-    if (client !== socket && client.readyState === WebSocket.OPEN) {
-      client.send(message);
+    let msg;
+    try {
+      msg = JSON.parse(data.toString());
+    } catch {
+      return;
     }
+
+    if (msg?.type !== 'message' || typeof msg.text !== 'string' || !msg.text.trim()) {
+      return;
+    }
+
+    console.log('MESSAGE RECEIVED', msg.text);
+
+    const out = JSON.stringify({ type: 'message', text: msg.text });
+    wss.clients.forEach((client) => {
+      if (client !== socket && client.readyState === WebSocket.OPEN) {
+        client.send(out);
+      }
+    });
   });
 
   socket.on('close', () => {
@@ -36,7 +50,6 @@ wss.on('connection', (socket) => {
   });
 
   socket.on('error', (err) => {
-    console.error('WE GOTS AN ERROR YO ', err.message);
+    console.error('WE GOTS AN ERROR YO', err.message);
   });
 });
-
