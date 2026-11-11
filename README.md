@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/running-man.png" alt="The AIM running man" width="160">
+</p>
+
 # great-aim
 
 A multi-user, browser-based recreation of AOL Instant Messenger, built with React and Node. Pick a screen name, sign on, see who else is online, and chat in real time, complete with a Windows 98 look and a running man.
